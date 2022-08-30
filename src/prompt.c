@@ -23,7 +23,7 @@ int prompt () {
 		fprintf(stderr, "Input: Memory exceeded\n");
 		return -1;
 	}
-	char* inp_str = fgets(input, MAX_ARGS_LEN, stdin);
+	char* inp_str = fgets(input, MAX_INP_LEN, stdin);
 	if ( !inp_str ) {
 		fprintf(stderr, "Input: Error reading input\n");
 		return -1;

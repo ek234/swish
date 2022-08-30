@@ -8,8 +8,8 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-#define MAX_INP_LEN (size_t)500+1
-#define MAX_ARGS_LEN (size_t)20+1
+#define MAX_INP_LEN (size_t)5000+1
+#define MAX_ARGS_LEN (size_t)200+1
 
 extern struct passwd* user_details;
 extern char* username;
