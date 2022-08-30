@@ -6,6 +6,9 @@ char* username;
 char* homedir;
 char* hostname;
 
+char* cwd;
+char* owd;
+
 int init () {
 
 	user_details = getpwuid(getuid());
@@ -18,6 +21,18 @@ int init () {
 
 	homedir = getcwd(NULL, 0);
 	if ( !homedir ) {
+		perror("getcwd");
+		return -1;
+	}
+
+	cwd = getcwd(NULL, 0);
+	if ( !cwd ) {
+		perror("getcwd");
+		return -1;
+	}
+
+	owd = getcwd(NULL, 0);
+	if ( !owd ) {
 		perror("getcwd");
 		return -1;
 	}
@@ -38,6 +53,8 @@ int deinit () {
 
 	free(homedir);
 	free(hostname);
+	free(cwd);
+	free(owd);
 
 	return 0;
 }

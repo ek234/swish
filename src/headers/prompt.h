@@ -16,6 +16,9 @@ extern char* username;
 extern char* homedir;
 extern char* hostname;
 
+extern char* cwd;
+extern char* owd;
+
 int prompt ();
 int get_builtin_id ();
 int printprompt ();

@@ -1,19 +1,16 @@
 #include "./headers/prompt.h"
 
 int printprompt () {
-	char* cwd = getcwd(NULL, 0);
-	char* dir = cwd;
 	if (!strncmp(cwd, homedir, strlen(homedir))) {
 		char* base = "~";
-		dir = malloc(( strlen(base) + strlen(dir) - strlen(homedir) + 1 ) * sizeof(char));
+		char* dir = malloc(( strlen(base) + strlen(cwd) - strlen(homedir) + 1 ) * sizeof(char));
 		strcpy(dir, base);
 		strcat(dir, cwd + strlen(homedir));
-		free(cwd);
+		printf("%s@%s:%s> ", username, hostname, dir);
+		free(dir);
+	} else {
+		printf("%s@%s:%s> ", username, hostname, cwd);
 	}
-
-	printf("%s@%s:%s> ", username, hostname, dir);
-
-	free(dir);
 	return 0;
 }
 
@@ -71,56 +68,88 @@ int prompt () {
 			}
 			args[num_args] = NULL;
 
-			pid_t child_pid;
-
-			switch ( get_builtin_id( args[0] ) ) {
-
-				case 0:
-					return 1;
-					break;
-
-				case 1:
-					if ( chdir(args[1]) == -1 ) {
-						perror("chdir");
-						return -1;
-					}
-					break;
-
-				case 2:
-					printf("%s\n", getcwd(NULL, 0));
-					break;
-
-				default:
-					child_pid = fork();
-					if ( !child_pid ) {
-						execvp(args[0], args);
-						perror(args[0]);
-					} else {
-						printf("\n%p\n%p\n", command_ptr+1, inp_ptr);
-						if ( command_ptr+1 == inp_ptr )
-							wait(NULL);
-						else
-							printf("[%d] started in bg\n", ++num_children);
-					}
+			if ( !strcmp( args[0], "exit" ) ) {
+				return 1;
 			}
+			else if ( !strcmp( args[0], "cd" ) ) {
 
+				char* dir = NULL;
+
+				// `.` and `..` are handled by chdir itself
+				if ( args[1] == NULL ) {
+					dir = malloc( (strlen(homedir) + 1) * sizeof(char) );
+					strcpy(dir, homedir);
+				}
+				else if ( args[1][0] == '~' ) {
+					dir = malloc( (strlen(homedir) + strlen(args[1])-1 + 1) * sizeof(char) );
+					strcpy(dir, homedir);
+					strcat(dir, args[1]+1);
+				//} else if ( args[1][0] == '.' ) {
+				//	int num_dots = 0;
+				//	while ( args[1][num_dots] == '.' )
+				//		num_dots++;
+				//	num_dots--;
+
+				//	int endofpath = strlen(args[1])-1;
+				//	while ( args[1][endofpath] == '/' )
+				//		endofpath--;
+
+				//	for ( ; endofpath >= 0; endofpath-- ) {
+				//		if ( num_dots == 0 )
+				//			goto found;
+				//		if ( args[1][endofpath] == '/' )
+				//			num_dots--;
+				//	}
+				//	dir = malloc( (strlen("/") + 1) * sizeof(char) );
+				//	strcpy(dir, "/");
+				//	found:;
+				//	dir = malloc( (strlen(homedir) + strlen(args[1])-1 + 1) * sizeof(char) );
+				//	strcpy(dir, homedir);
+				//	strcat(dir, args[1]+1);
+				}
+				else if ( !strcmp(args[1], "-") ) {
+					dir = malloc( (strlen(owd) + 1) * sizeof(char) );
+					strcpy(dir, owd);
+				}
+				else {
+					dir = malloc( (strlen(args[1]) + 1) * sizeof(char) );
+					strcpy(dir, args[1]);
+				}
+
+				if ( chdir(dir) == -1 ) {
+					perror(args[1]);
+					free(dir);
+					return -1;
+				}
+
+				free(owd);
+				owd = cwd;
+				cwd = getcwd(NULL, 0);
+
+				free(dir);
+			}
+			else if ( !strcmp( args[0], "pwd" ) ) {
+				printf("%s\n", cwd);
+			}
+			else if ( !strcmp( args[0], "echo" ) ) {
+				for ( int i = 1; args[i] != NULL; i++ )
+					printf("%s ", args[i]);
+				printf("\n");
+			}
+			else {
+				pid_t child_pid = fork();
+				if ( !child_pid ) {
+					execvp(args[0], args);
+					perror(args[0]);
+				} else {
+					if ( command_ptr+1 == inp_ptr )
+						wait(NULL);
+					else
+						printf("[%d] started in bg\n", ++num_children);
+				}
+			}
 		}
 	}
 
 	return 0;
-}
-
-int get_builtin_id ( char* command ) {
-
-	char* builtin_table[] = {
-		"exit",
-		"cd",
-		"pwd",
-	};
-
-	for ( int i = 0; i < sizeof(builtin_table)/sizeof(builtin_table[0]) ; i++ ) {
-		if ( ! strcmp(command, builtin_table[i]) )
-			return i;
-	}
-	return -1;
 }
