@@ -62,12 +62,13 @@ int prompt () {
 
 				char* arg = strtok_r(subcommand, " \t", &args_ptr);
 				subcommand = NULL;
+				args[num_args] = arg;
 				if (arg == NULL)
 					break;
-				args[num_args] = arg;
 			}
-			args[num_args] = NULL;
 
+			if ( args[0] == NULL )
+				continue;
 			if ( !strcmp( args[0], "exit" ) ) {
 				return 1;
 			}
