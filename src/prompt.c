@@ -18,57 +18,51 @@ int prompt () {
 
 	printprompt();
 
-	char* input = malloc(MAX_INP_LEN * sizeof(char));
+	char* input = malloc( (MAX_INP_LEN + 1) * sizeof(char));
 	if ( !input ) {
 		fprintf(stderr, "Input: Memory exceeded\n");
 		return -1;
 	}
-	char* inp_str = fgets(input, MAX_INP_LEN, stdin);
-	if ( !inp_str ) {
+	if ( ! fgets(input, MAX_INP_LEN, stdin) ) {
 		fprintf(stderr, "Input: Error reading input\n");
 		return -1;
 	}
 
-	char* inp_ptr = NULL;
-	while (1) {
+	for ( char* input_str = input, * input_ptr = NULL; ; input_str = NULL ) {
 
-		char* command = strtok_r(inp_str, ";\n", &inp_ptr);
-		inp_str = NULL;
-		if (command == NULL) {
+		char* command = strtok_r(input_str, ";\n", &input_ptr);
+		if (command == NULL)
 			break;
-		}
 
 		int num_children = 0;
 
-		char* command_ptr = NULL;
-		while (1) {
+		for ( char* command_str = command, * command_ptr = NULL; ; command_str = NULL ) {
 
-			char* subcommand = strtok_r(command, "&", &command_ptr);
-			command = NULL;
-			if (subcommand == NULL) {
+			char* subcommand = strtok_r(command_str, "&", &command_ptr);
+			if (subcommand == NULL)
 				break;
-			}
+			// TODO: make this prettier
+			int isBG = strrchr(subcommand, '\0') < input_ptr-1;
 
-			char* args[MAX_ARGS_LEN];
+			char* args[MAX_ARGS_LEN+1];
 
-			char* args_ptr = NULL;
-			size_t num_args;
-			for ( num_args = 0; ; num_args++ ) {
+			size_t num_args = 0;
+			for ( char* subcommand_str = subcommand, * subcommand_ptr = NULL ; ; subcommand_str = NULL ) {
 
-				if ( num_args >= MAX_ARGS_LEN-1 ) {
+				if ( num_args >= MAX_ARGS_LEN ) {
 					fprintf(stderr, "Arguments: Number of arguments exceeded\n");
 					return -1;
 				}
 
-				char* arg = strtok_r(subcommand, " \t", &args_ptr);
-				subcommand = NULL;
-				args[num_args] = arg;
+				char* arg = strtok_r(subcommand_str, " \t", &subcommand_ptr);
+				args[num_args++] = arg;
 				if (arg == NULL)
 					break;
 			}
 
 			if ( args[0] == NULL )
 				continue;
+
 			if ( !strcmp( args[0], "exit" ) ) {
 				return 1;
 			}
@@ -78,47 +72,25 @@ int prompt () {
 
 				// `.` and `..` are handled by chdir itself
 				if ( args[1] == NULL ) {
-					dir = malloc( (strlen(homedir) + 1) * sizeof(char) );
+					dir = malloc( ( strlen(homedir) + 1 ) * sizeof(char) );
 					strcpy(dir, homedir);
 				}
 				else if ( args[1][0] == '~' ) {
-					dir = malloc( (strlen(homedir) + strlen(args[1])-1 + 1) * sizeof(char) );
+					dir = malloc( ( strlen(homedir) + strlen(args[1])-1 + 1 ) * sizeof(char) );
 					strcpy(dir, homedir);
 					strcat(dir, args[1]+1);
-				//} else if ( args[1][0] == '.' ) {
-				//	int num_dots = 0;
-				//	while ( args[1][num_dots] == '.' )
-				//		num_dots++;
-				//	num_dots--;
-
-				//	int endofpath = strlen(args[1])-1;
-				//	while ( args[1][endofpath] == '/' )
-				//		endofpath--;
-
-				//	for ( ; endofpath >= 0; endofpath-- ) {
-				//		if ( num_dots == 0 )
-				//			goto found;
-				//		if ( args[1][endofpath] == '/' )
-				//			num_dots--;
-				//	}
-				//	dir = malloc( (strlen("/") + 1) * sizeof(char) );
-				//	strcpy(dir, "/");
-				//	found:;
-				//	dir = malloc( (strlen(homedir) + strlen(args[1])-1 + 1) * sizeof(char) );
-				//	strcpy(dir, homedir);
-				//	strcat(dir, args[1]+1);
 				}
 				else if ( !strcmp(args[1], "-") ) {
-					dir = malloc( (strlen(owd) + 1) * sizeof(char) );
+					dir = malloc( ( strlen(owd) + 1 ) * sizeof(char) );
 					strcpy(dir, owd);
 				}
 				else {
-					dir = malloc( (strlen(args[1]) + 1) * sizeof(char) );
+					dir = malloc( ( strlen(args[1]) + 1 ) * sizeof(char) );
 					strcpy(dir, args[1]);
 				}
 
 				if ( chdir(dir) == -1 ) {
-					perror(args[1]);
+					perror(dir);
 					free(dir);
 					return -1;
 				}
@@ -143,14 +115,16 @@ int prompt () {
 					execvp(args[0], args);
 					perror(args[0]);
 				} else {
-					if ( command_ptr+1 == inp_ptr )
-						wait(NULL);
+					if ( isBG )
+						printf("[%d] %d\n", ++num_children, child_pid);
 					else
-						printf("[%d] started in bg\n", ++num_children);
+						wait(NULL);
+					fflush(stdout);
 				}
 			}
 		}
 	}
 
+	free(input);
 	return 0;
 }
