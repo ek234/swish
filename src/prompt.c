@@ -97,13 +97,13 @@ int prompt () {
 				bg_tasks[bg_task_id-1] = child_pid;
 			} else if ( child_pid == 0 ) {
 				// do not store return in pestatus
-				exit(commands(args, bg_task_id));
+				exit(commands(num_args-1, args, bg_task_id));
 			} else {
 				perror("subshell");
 				return -1;
 			}
 		} else {
-			pestatus = commands(args, bg_task_id);
+			pestatus = commands(num_args-1, args, bg_task_id);
 		}
 
 		for ( int i = 0; i < MAX_BG_TASKS; i++ )

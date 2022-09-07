@@ -19,7 +19,7 @@ extern char* owd;
 extern int pestatus;
 extern pid_t bg_tasks[];
 
-extern int commands ( char* [], int );
+extern int commands ( int, char* [], int );
 
 int prompt ();
 int get_builtin_id ();
