@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <assert.h>
 #include "./def.h"
+#include "./colors.h"
 
 extern struct passwd* user_details;
 extern char* username;

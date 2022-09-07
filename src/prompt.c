@@ -1,16 +1,12 @@
 #include "./headers/prompt.h"
 
 int printprompt () {
-	if (!strncmp(cwd, homedir, strlen(homedir))) {
-		char* base = "~";
-		char* dir = malloc(( strlen(base) + strlen(cwd) - strlen(homedir) + 1 ) * sizeof(char));
-		strcpy(dir, base);
-		strcat(dir, cwd + strlen(homedir));
-		printf("%s@%s:%s> ", username, hostname, dir);
-		free(dir);
-	} else {
-		printf("%s@%s:%s> ", username, hostname, cwd);
-	}
+	printf( CYN "%s" RESET "@" MAG "%s" RESET ":" YEL , username, hostname);
+	if (!strncmp(cwd, homedir, strlen(homedir)))
+		printf("~%s" , &cwd[ strlen(homedir) ]);
+	else
+		printf("%s", cwd);
+	printf( WHT "> " RESET);
 	return 0;
 }
 

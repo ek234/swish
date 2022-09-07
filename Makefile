@@ -8,7 +8,7 @@ _DEPS = commands.h init.h main.h prompt.h utils.h colors.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 ODIR = obj
-_OBJ = commands.o init.o main.o prompt.o utils.o colors.o
+_OBJ = commands.o init.o main.o prompt.o utils.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
