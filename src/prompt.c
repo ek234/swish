@@ -18,113 +18,117 @@ int prompt () {
 
 	printprompt();
 
-	char* input = malloc( (MAX_INP_LEN + 1) * sizeof(char));
+	char* input = NULL;
+	size_t input_len = 0;
+	int len_read = getline(&input, &input_len, stdin);
 	if ( !input ) {
 		fprintf(stderr, "Input: Memory exceeded\n");
 		return -1;
 	}
-	if ( ! fgets(input, MAX_INP_LEN, stdin) ) {
-		fprintf(stderr, "Input: Error reading input\n");
+	if ( len_read < 0 ) {
+		// error reading input: include EOF
+		// TODO: find better way to handle EOF
+		printf("\n");
+		free(input);
+		exit(0);
+	} else if ( len_read == 0 ) {
+		free(input);
+		return 0;
+	}
+
+	// replace new line char with `;`
+	while ( strchr(input, '\n') )
+		*(strchr(input, '\n')) = ';';
+
+	char* input_cp = strdup(input);
+	if ( !input_cp ) {
+		fprintf(stderr, "Input: Memory exceeded\n");
 		return -1;
 	}
 
-	for ( char* input_str = input, * input_ptr = NULL; ; input_str = NULL ) {
+	char* input_ite = input_cp;
+	while (1) {
 
-		char* command = strtok_r(input_str, ";\n", &input_ptr);
+		char* command = strtok_r(NULL, ";&", &input_ite);
 		if (command == NULL)
 			break;
 
-		int num_children = 0;
-
-		for ( char* command_str = command, * command_ptr = NULL; ; command_str = NULL ) {
-
-			char* subcommand = strtok_r(command_str, "&", &command_ptr);
-			if (subcommand == NULL)
-				break;
-			// TODO: make this prettier
-			int isBG = strrchr(subcommand, '\0') < input_ptr-1;
-
-			char* args[MAX_ARGS_LEN+1];
-
-			size_t num_args = 0;
-			for ( char* subcommand_str = subcommand, * subcommand_ptr = NULL ; ; subcommand_str = NULL ) {
-
-				if ( num_args >= MAX_ARGS_LEN ) {
-					fprintf(stderr, "Arguments: Number of arguments exceeded\n");
-					return -1;
-				}
-
-				char* arg = strtok_r(subcommand_str, " \t", &subcommand_ptr);
-				args[num_args++] = arg;
-				if (arg == NULL)
+		int bg_task_id = 0;
+		if ( input[input_ite-1-input_cp] == '&' ) {
+			// BG task
+			for ( int i = 0; i < MAX_BG_TASKS; i++ ) {
+				if (bg_tasks[i] == 0) {
+					bg_task_id = i+1;
 					break;
+				}
 			}
-
-			if ( args[0] == NULL )
-				continue;
-
-			if ( !strcmp( args[0], "exit" ) ) {
-				return 1;
-			}
-			else if ( !strcmp( args[0], "cd" ) ) {
-
-				char* dir = NULL;
-
-				// `.` and `..` are handled by chdir itself
-				if ( args[1] == NULL ) {
-					dir = malloc( ( strlen(homedir) + 1 ) * sizeof(char) );
-					strcpy(dir, homedir);
-				}
-				else if ( args[1][0] == '~' ) {
-					dir = malloc( ( strlen(homedir) + strlen(args[1])-1 + 1 ) * sizeof(char) );
-					strcpy(dir, homedir);
-					strcat(dir, args[1]+1);
-				}
-				else if ( !strcmp(args[1], "-") ) {
-					dir = malloc( ( strlen(owd) + 1 ) * sizeof(char) );
-					strcpy(dir, owd);
-				}
-				else {
-					dir = malloc( ( strlen(args[1]) + 1 ) * sizeof(char) );
-					strcpy(dir, args[1]);
-				}
-
-				if ( chdir(dir) == -1 ) {
-					perror(dir);
-					free(dir);
-					return -1;
-				}
-
-				free(owd);
-				owd = cwd;
-				cwd = getcwd(NULL, 0);
-
-				free(dir);
-			}
-			else if ( !strcmp( args[0], "pwd" ) ) {
-				printf("%s\n", cwd);
-			}
-			else if ( !strcmp( args[0], "echo" ) ) {
-				for ( int i = 1; args[i] != NULL; i++ )
-					printf("%s ", args[i]);
-				printf("\n");
-			}
-			else {
-				pid_t child_pid = fork();
-				if ( !child_pid ) {
-					execvp(args[0], args);
-					perror(args[0]);
-				} else {
-					if ( isBG )
-						printf("[%d] %d\n", ++num_children, child_pid);
-					else
-						wait(NULL);
-					fflush(stdout);
-				}
+			if ( bg_task_id == 0 ) {
+				fprintf(stderr, "Background tasks: Number of background tasks exceeded\n");
+				return -1;
 			}
 		}
+		else if ( input[input_ite-1-input_cp] == ';' )
+			// FG task
+			bg_task_id = 0;
+		else
+			// this should never reach
+			exit(0);
+
+		char* args[MAX_ARGS_LEN];
+		size_t num_args = 0;
+		char* command_ite = command;
+		while (1) {
+
+			if ( num_args >= MAX_ARGS_LEN ) {
+				fprintf(stderr, "Arguments: Number of arguments exceeded\n");
+				return -1;
+			}
+
+			char* arg = strtok_r(NULL, " \t", &command_ite);
+			args[num_args++] = arg;
+			if (arg == NULL)
+				break;
+		}
+
+		if ( !!bg_task_id ) {
+			pid_t child_pid = fork();
+			if (child_pid > 0) {
+				printf("[%d] %d started %s\n", bg_task_id, child_pid, args[0]);
+				bg_tasks[bg_task_id-1] = child_pid;
+			} else if ( child_pid == 0 ) {
+				// do not store return in pestatus
+				exit(commands(args, bg_task_id));
+			} else {
+				perror("subshell");
+				return -1;
+			}
+		} else {
+			pestatus = commands(args, bg_task_id);
+		}
+
+		for ( int i = 0; i < MAX_BG_TASKS; i++ )
+			if ( !!bg_tasks[i] ) {
+				int status;
+				pid_t pid = waitpid(bg_tasks[i], &status, WNOHANG | WUNTRACED);
+				if ( pid < 0) {
+					perror("waitpid");
+					return -1;
+				} else if ( pid == bg_tasks[i] ) {
+					if ( WIFEXITED(status) ) {
+						printf("[%d] %d exited with status %d\n", i+1, bg_tasks[i], WEXITSTATUS(status));
+						bg_tasks[i] = 0;
+					} else if ( WIFSIGNALED(status) ) {
+						printf("[%d] %d killed by signal %d\n", i+1, bg_tasks[i], WTERMSIG(status));
+						bg_tasks[i] = 0;
+					} else if ( WIFSTOPPED(status) ) {
+						printf("[%d] %d stopped by signal %d\n", i+1, bg_tasks[i], WSTOPSIG(status));
+					}
+				}
+			}
 	}
 
+	fflush(stdout);
 	free(input);
+	free(input_cp);
 	return 0;
 }

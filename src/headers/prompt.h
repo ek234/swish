@@ -7,17 +7,19 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
-
-#define MAX_INP_LEN (size_t)5000
-#define MAX_ARGS_LEN (size_t)200
+#include <assert.h>
+#include "./def.h"
 
 extern struct passwd* user_details;
 extern char* username;
 extern char* homedir;
 extern char* hostname;
-
 extern char* cwd;
 extern char* owd;
+extern int pestatus;
+extern pid_t bg_tasks[];
+
+extern int commands ( char* [], int );
 
 int prompt ();
 int get_builtin_id ();

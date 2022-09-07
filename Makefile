@@ -4,19 +4,19 @@ CC = gcc
 CFLAGS =
 
 IDIR = $(BASE)/headers
-_DEPS = main.h init.h prompt.h
+_DEPS = commands.h init.h main.h prompt.h utils.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 ODIR = obj
-_OBJ = init.o main.o prompt.o
+_OBJ = commands.o init.o main.o prompt.o utils.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
 $(ODIR)/%.o: $(BASE)/%.c $(DEPS) | $(ODIR)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -g -c -o $@ $< $(CFLAGS)
 
 swish: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CC) -g -o $@ $^ $(CFLAGS)
 
 $(ODIR):
 	mkdir -p $(ODIR)

@@ -1,5 +1,4 @@
 #include "./headers/init.h"
-#include <unistd.h>
 
 struct passwd* user_details;
 char* username;
@@ -8,6 +7,10 @@ char* hostname;
 
 char* cwd;
 char* owd;
+
+int pestatus;
+
+pid_t bg_tasks[MAX_BG_TASKS] = {0};
 
 int init () {
 
@@ -45,6 +48,8 @@ int init () {
 			return -1;
 		}
 	}
+
+	pestatus = 0;
 
 	return 0;
 }

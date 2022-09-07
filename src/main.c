@@ -3,7 +3,8 @@
 int main () {
 	init();
 
-	for ( int ret = 0; ret != 1; ) {
+	int ret = 0;
+	while (1) {
 		ret = prompt();
 	}
 
