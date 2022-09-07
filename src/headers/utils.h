@@ -6,7 +6,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <pwd.h>
+#include <grp.h>
+#include <time.h>
 #include <dirent.h>
+#include "./colors.h"
 
 extern char* homedir;
 extern char* cwd;

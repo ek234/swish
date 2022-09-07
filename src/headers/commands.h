@@ -8,10 +8,6 @@
 #include <dirent.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include <pwd.h>
-#include <grp.h>
-#include <time.h>
-#include "./colors.h"
 #include "./def.h"
 
 extern char* homedir;
