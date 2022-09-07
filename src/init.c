@@ -9,6 +9,7 @@ char* cwd;
 char* owd;
 
 int pestatus;
+int ptime;
 
 pid_t bg_tasks[MAX_BG_TASKS] = {0};
 
@@ -50,6 +51,7 @@ int init () {
 	}
 
 	pestatus = 0;
+	ptime = 0;
 
 	return 0;
 }

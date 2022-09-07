@@ -6,7 +6,10 @@ int printprompt () {
 		printf("~%s" , &cwd[ strlen(homedir) ]);
 	else
 		printf("%s", cwd);
-	printf( WHT "> " RESET);
+	printf( RESET "|" RED );
+	if ( ptime >= 1 )
+		printf("%d", ptime);
+	printf( RESET ">> " );
 	return 0;
 }
 
@@ -99,7 +102,9 @@ int prompt () {
 				return -1;
 			}
 		} else {
+			time_t start = time(NULL);
 			pestatus = commands(num_args-1, args, bg_task_id);
+			ptime = time(NULL) - start;
 		}
 
 		for ( int i = 0; i < MAX_BG_TASKS; i++ )

@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <assert.h>
+#include <time.h>
 #include "./def.h"
 #include "./colors.h"
 
@@ -19,6 +20,7 @@ extern char* cwd;
 extern char* owd;
 extern int pestatus;
 extern pid_t bg_tasks[];
+extern int ptime;
 
 extern int commands ( int, char* [], int );
 
