@@ -139,7 +139,7 @@ int ls ( int argc, char* argv[] ) {
 						break;
 				}
 			}
-			// TODO: sort
+			qsort(entries, num_entries, sizeof(struct dirent*), filecmp);
 
 			if ( query_count > 1 )
 				printf("%s:\n%d entries>\n", query_path, num_entries);

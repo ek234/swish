@@ -1,13 +1,10 @@
 #include "./headers/utils.h"
 
 int filecmp ( const void* a, const void* b ) {
-	printf("name of file a: %s\n", ((struct dirent*)a)->d_name);
-	char* a_name = ((struct dirent*)a)->d_name;
-	char* b_name = ((struct dirent*)b)->d_name;
-	printf("%s %s\n", a_name, b_name);
+	char* a_name = (*(struct dirent**)a)->d_name;
+	char* b_name = (*(struct dirent**)b)->d_name;
 	while(a_name[0] == '.') a_name++;
 	while(b_name[0] == '.') b_name++;
-	printf("%s %s\n", a_name, b_name);
 
 	return strcmp ( a_name, b_name );
 }
