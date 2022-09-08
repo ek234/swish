@@ -29,5 +29,7 @@ int cd ( int, char* [] );
 int ls ( int, char* [] );
 int printHistory ( int, char* [] );
 int pinfo ( int, char* [] );
+int recursivelyDiscover ( char*, char*, int, int );
+int discover ( int, char* [] );
 
 #endif
