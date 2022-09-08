@@ -14,6 +14,8 @@ extern char* homedir;
 extern char* cwd;
 extern char* owd;
 extern int pestatus;
+extern int history_count;
+extern char* history[];
 
 extern int filecmp( const void* a, const void* b );
 extern char* parsePath ( char* );
@@ -23,5 +25,6 @@ extern void printlsn ( char*, struct stat* );
 int commands ( int, char* [], int );
 int cd ( int, char* [] );
 int ls ( int, char* [] );
+int printHistory ( int, char* [] );
 
 #endif

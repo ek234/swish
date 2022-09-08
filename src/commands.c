@@ -3,30 +3,39 @@
 int commands ( int argc, char* argv[], int bg_task_id ) {
 
 	if ( argv[0] == NULL )
-		return 0;
+		return CONTINUE_NORMAL;
 
 	if ( !strcmp( argv[0], "exit" ) ) {
-		exit(EXIT_SUCCESS);
+		return EXIT_NORMAL;
 	}
 
 	else if ( !strcmp( argv[0], "cd" ) ) {
-		return cd(argc, argv);
+		pestatus = cd(argc, argv);
+		return CONTINUE_NORMAL;
 	}
 
 	else if ( !strcmp( argv[0], "ls" ) ) {
-		return ls(argc, argv);
+		pestatus = ls(argc, argv);
+		return CONTINUE_NORMAL;
+	}
+
+	else if ( !strcmp( argv[0], "history" ) ) {
+		pestatus = printHistory(argc, argv);
+		return CONTINUE_NORMAL;
 	}
 
 	else if ( !strcmp( argv[0], "pwd" ) ) {
 		printf("%s\n", cwd);
-		return 0;
+		pestatus = 0;
+		return CONTINUE_NORMAL;
 	}
 
 	else if ( !strcmp( argv[0], "echo" ) ) {
 		for ( int i = 1; argv[i] != NULL; i++ )
 			printf("%s ", argv[i]);
 		printf("\n");
-		return 0;
+		pestatus = 0;
+		return CONTINUE_NORMAL;
 	}
 
 	else {
@@ -35,19 +44,22 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 			if ( child_pid > 0 ) {
 				int status;
 				waitpid( child_pid, &status, 0 );
-				return WEXITSTATUS(status);
+				pestatus = WIFEXITED(status) ? WEXITSTATUS(status) : -100;
+				return CONTINUE_NORMAL;
 			} else if ( child_pid == 0 ) {
 				int err = execvp(argv[0], argv);
 				perror(argv[0]);
 				exit(err);
 			} else {
 				perror("execvp");
-				return -1;
+				pestatus = -1;
+				return CONTINUE_AFTER_SHELL_ERROR;
 			}
 		} else {
 			execvp(argv[0], argv);
 			perror(argv[0]);
-			return -1;
+			pestatus = -1;
+			return CONTINUE_AFTER_SHELL_ERROR;
 		}
 	}
 }
@@ -73,7 +85,7 @@ int ls ( int argc, char* argv[] ) {
 					 goto processed;
 				 case '?' :
 					 fprintf(stderr, "ls: Invalid option %d\n", optopt);
-					 return 0;
+					 return -1;
 			 }
 			 goto loop;
 		processed:;
@@ -183,5 +195,33 @@ int cd ( int argc, char* argv[] ) {
 	cwd = getcwd(NULL, 0);
 
 	free(dir);
+	return 0;
+}
+
+int printHistory ( int argc, char* argv[] ) {
+
+	int depth = 10;
+
+	if ( argc > 2 ) {
+		fprintf(stderr, "history: usage: history [<max depth>]\n");
+		return -1;
+	} else if ( argc == 2 ) {
+		depth = atoi( argv[1] );
+		if ( depth < 0 ) {
+			fprintf(stderr, "history: invalid depth %d\n", depth);
+			return -1;
+		}
+	}
+
+	if ( depth > MAX_HISTORY )
+		depth = MAX_HISTORY;
+
+	int start = history_count - depth;
+	if ( start < 0 )
+		start = 0;
+
+	for ( int i = start; i < history_count; i++ )
+		printf("%s\n", history[ i % MAX_HISTORY ]);
+
 	return 0;
 }

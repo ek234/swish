@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include "./utils.h"
 #include "./def.h"
 
 int init ();

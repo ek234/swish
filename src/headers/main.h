@@ -3,6 +3,7 @@
 
 #include "./init.h"
 #include "./prompt.h"
+#include "./def.h"
 
 int main ();
 

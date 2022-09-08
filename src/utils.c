@@ -26,12 +26,11 @@ char* parsePath ( char* path ) {
 		strcat(dir, path+1);
 	}
 	else {
-		dir = malloc( ( strlen(path) + 1 ) * sizeof(char) );
+		dir = strdup(path);
 		if ( !dir ) {
-			perror("malloc");
+			perror("Copying path");
 			return NULL;
 		}
-		strcpy(dir, path);
 	}
 
 	return dir;

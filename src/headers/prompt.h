@@ -21,11 +21,12 @@ extern char* owd;
 extern int pestatus;
 extern pid_t bg_tasks[];
 extern int ptime;
+extern int history_count;
+extern char* history[];
 
 extern int commands ( int, char* [], int );
 
 int prompt ();
-int get_builtin_id ();
-int printprompt ();
+void printprompt ();
 
 #endif

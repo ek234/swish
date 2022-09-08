@@ -5,7 +5,20 @@
 #define MAX_USERNAME_LEN (size_t)256+1
 #define MAX_BG_TASKS (size_t)100
 #define MAX_NUM_CONTENTS (size_t)500
+#define MAX_HISTORY (size_t)20
+
+#define HISTORYFILE "~/.history.txt"
 
 #define MAX_HOSTNAME_LEN _POSIX_HOST_NAME_MAX
+
+// in order of priority
+// ie, if one part of the command returns `CONTINUE_AFTER_SHELL_ERROR` and another
+// part returns `EXIT_AFTER_SHELL_ERROR`` then the later will be returned
+enum main_ite_returns {
+	CONTINUE_NORMAL,
+	CONTINUE_AFTER_SHELL_ERROR,
+	EXIT_NORMAL,
+	EXIT_AFTER_SHELL_ERROR
+};
 
 #endif

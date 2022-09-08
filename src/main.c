@@ -3,11 +3,20 @@
 int main () {
 	init();
 
-	int ret = 0;
 	while (1) {
-		ret = prompt();
-	}
+		switch ( prompt() ) {
+			case CONTINUE_AFTER_SHELL_ERROR :
+			case CONTINUE_NORMAL:
+				break;
 
-	deinit();
-	return 0;
+			case EXIT_AFTER_SHELL_ERROR :
+			case EXIT_NORMAL :
+				deinit();
+				return 0;
+
+			default :
+				deinit();
+				return 1;
+		}
+	}
 }
