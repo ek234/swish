@@ -1,4 +1,6 @@
 #include "./headers/commands.h"
+#include <stdlib.h>
+#include <sys/stat.h>
 
 int commands ( int argc, char* argv[], int bg_task_id ) {
 
@@ -21,6 +23,11 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 
 	else if ( !strcmp( argv[0], "history" ) ) {
 		pestatus = printHistory(argc, argv);
+		return CONTINUE_NORMAL;
+	}
+
+	else if ( !strcmp( argv[0], "pinfo" ) ) {
+		pestatus = pinfo(argc, argv);
 		return CONTINUE_NORMAL;
 	}
 
@@ -222,6 +229,104 @@ int printHistory ( int argc, char* argv[] ) {
 
 	for ( int i = start; i < history_count; i++ )
 		printf("%s\n", history[ i % MAX_HISTORY ]);
+
+	return 0;
+}
+
+int pinfo ( int argc, char* argv[] ) {
+
+	pid_t pid = getpid();
+
+	if ( argc > 2 ) {
+		fprintf(stderr, "pinfo: usage: pinfo [<pid>]\n");
+		return -1;
+	} else if ( argc == 2 ) {
+		pid = atoi( argv[1] );
+	}
+
+	char* ppath = malloc( (strlen("/proc") + MAX_PID_LEN + 1 + 1) * sizeof(char) );
+	if ( !ppath ) {
+		perror("malloc");
+		return -1;
+	}
+	sprintf(ppath, "/proc/%d", pid);
+
+	char* exe_path = malloc( (strlen(ppath) + strlen("/exe") + 1) * sizeof(char) );
+	if ( !exe_path ) {
+		perror("malloc");
+		free(ppath);
+		return -1;
+	}
+	sprintf( exe_path, "%s/exe", ppath );
+	char* path_to_exe = malloc( (PATH_MAX+1) * sizeof(char) );
+	if ( !path_to_exe ) {
+		perror("malloc");
+		free(ppath);
+		free(exe_path);
+		return -1;
+	}
+	size_t len_path_to_exe = readlink(exe_path, path_to_exe, PATH_MAX);
+	if ( len_path_to_exe != -1 ) {
+		path_to_exe[len_path_to_exe] = '\0';
+	} else {
+		// if process is zombie
+		strcpy(path_to_exe, "-");
+	}
+
+	char* stat_path = malloc( (strlen(ppath) + strlen("/stat") + 1) * sizeof(char) );
+	if ( !stat_path ) {
+		perror("malloc");
+		free(ppath);
+		free(exe_path);
+		free(path_to_exe);
+		return -1;
+	}
+	sprintf( stat_path, "%s/stat", ppath );
+	int stat_fd = open(stat_path, O_RDONLY);
+	if ( stat_fd < 0 ) {
+		fprintf(stderr, "pinfo: process %d does not exist\n", pid);
+		free(ppath);
+		free(exe_path);
+		free(path_to_exe);
+		free(stat_path);
+		return -1;
+	}
+
+	char status = ' ';
+	int isFG = 0;
+	long unsigned vmemsize = -1;
+
+	size_t len = 1024;
+	char line[1024];
+	char* line_ite = line;
+	size_t len_read = read(stat_fd, line, len);
+
+	int i = 0;
+	char* val;
+	while ( (val = strtok_r(NULL, " ", &line_ite)) != NULL ) {
+		switch ( ++i ) {
+			case 3 :
+				status = val[0];
+				break;
+			case 8 :
+				isFG = atoi(val) == pid;
+				break;
+			case 23 :
+				vmemsize = strtoul(val,NULL,10);
+				break;
+		}
+	}
+
+	printf("pid:\t%d\n", pid);
+	printf("status:\t%c%c\n", status, isFG ? '+' : ' ');
+	printf("memory:\t%lu\n", vmemsize);
+	printf("exec:\t%s\n", path_to_exe);
+
+	close(stat_fd);
+	free(ppath);
+	free(exe_path);
+	free(path_to_exe);
+	free(stat_path);
 
 	return 0;
 }

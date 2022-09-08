@@ -8,6 +8,8 @@
 #include <dirent.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <limits.h>
+#include <fcntl.h>
 #include "./def.h"
 
 extern char* homedir;
@@ -26,5 +28,6 @@ int commands ( int, char* [], int );
 int cd ( int, char* [] );
 int ls ( int, char* [] );
 int printHistory ( int, char* [] );
+int pinfo ( int, char* [] );
 
 #endif
