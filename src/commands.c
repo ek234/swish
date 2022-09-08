@@ -31,6 +31,11 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 		return CONTINUE_NORMAL;
 	}
 
+	else if ( !strcmp( argv[0], "discover" ) ) {
+		pestatus = discover(argc, argv);
+		return CONTINUE_NORMAL;
+	}
+
 	else if ( !strcmp( argv[0], "pwd" ) ) {
 		printf("%s\n", cwd);
 		pestatus = 0;
@@ -78,7 +83,7 @@ int ls ( int argc, char* argv[] ) {
 	// dont print error
 	opterr = 0;
 	// reset getopt to start
-	optind = 0;
+	optind = 1;
 	{
 		loop:;
 			 switch ( getopt(argc, argv, "al") ) {
@@ -91,7 +96,7 @@ int ls ( int argc, char* argv[] ) {
 				 case -1 :
 					 goto processed;
 				 case '?' :
-					 fprintf(stderr, "ls: Invalid option %d\n", optopt);
+					 fprintf(stderr, "ls: invalid option %d\n", optopt);
 					 return -1;
 			 }
 			 goto loop;
@@ -327,6 +332,115 @@ int pinfo ( int argc, char* argv[] ) {
 	free(exe_path);
 	free(path_to_exe);
 	free(stat_path);
+
+	return 0;
+}
+
+int discover ( int argc, char* argv[] ) {
+	int FLAG_dir = 0;
+	int FLAG_fil = 0;
+
+	opterr = 0;
+	optind = 1;
+	{
+		loop:;
+			 switch ( getopt(argc, argv, "df") ) {
+				 case 'd' :
+					 FLAG_dir = 1;
+					 break;
+				 case 'f' :
+					 FLAG_fil = 1;
+					 break;
+				 case -1 :
+					 goto processed;
+				 case '?' :
+					 fprintf(stderr, "discover: invalid option %c\n", optopt);
+					 return -1;
+			 }
+			 goto loop;
+		processed:;
+	}
+
+	char* arguments[2] = {NULL, NULL};
+
+	for ( int i = optind; i < argc; i++ ) {
+		char* arg = parsePath( argv[i] );
+		struct stat statbuf;
+		if ( ( stat(arg, &statbuf) == 0 ) && ( S_ISDIR(statbuf.st_mode) ) ) {
+			if ( arguments[0] ) {
+				fprintf(stderr, "discover: %s: Multiple directories specified\n", arg);
+				for ( int i = 0; i < 2; i++ )
+					if ( arguments[i] )
+						free(arguments[i]);
+				return -1;
+			}
+			arguments[0] = arg;
+		} else {
+			if ( arguments[1] ) {
+				fprintf(stderr, "discover: %s: Multiple target files specified\n", arg);
+				for ( int i = 0; i < 2; i++ )
+					if ( arguments[i] )
+						free(arguments[i]);
+				return -1;
+			}
+			arguments[1] = arg;
+		}
+	}
+
+	if ( !arguments[0] ) {
+		arguments[0] = strdup(".");
+	}
+	if ( !arguments[1] && !FLAG_dir && !FLAG_fil ) {
+		FLAG_dir = FLAG_fil = 1;
+	}
+
+	int err = recursivelyDiscover(arguments[0], arguments[1], FLAG_dir, FLAG_fil);
+
+	for ( int i = 0; i < 2; i++ )
+		if ( arguments[i] )
+			free(arguments[i]);
+
+	return err;
+}
+
+int recursivelyDiscover ( char* dir, char* fil, int FLAG_dir, int FLAG_fil ) {
+
+	DIR* dirp = opendir(dir);
+	if ( !dirp ) {
+		fprintf(stderr, "discover: %s: directory not found\n", dir);
+		return -1;
+	}
+
+	struct dirent* entry;
+	while ( (entry = readdir(dirp)) != NULL ) {
+
+		char* entry_path = malloc( (strlen(dir) + 1 + strlen(entry->d_name) + 1) * sizeof(char) );
+		sprintf( entry_path, "%s%s%s", dir, dir[strlen(dir)-1] == '/' ? "" : "/", entry->d_name);
+		struct stat st;
+		if ( stat(entry_path, &st) == -1 ) {
+			perror(entry_path);
+			free(entry_path);
+			return -1;
+		}
+
+		if ( entry->d_type == DT_DIR ) {
+			if ( !!strcmp(entry->d_name, ".") && !!strcmp(entry->d_name, "..") ) {
+				if ( FLAG_dir ) {
+					printlsn(entry_path, &st);
+					printf("\n");
+				}
+				recursivelyDiscover(entry_path, fil, FLAG_dir, FLAG_fil);
+			}
+		}
+		else {
+			if ( FLAG_fil || ( !!fil && !strcmp( entry->d_name, fil ) ) ) {
+				printlsn(entry_path, &st);
+				printf("\n");
+			}
+		}
+
+		free(entry_path);
+	}
 
 	return 0;
 }

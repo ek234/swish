@@ -4,7 +4,7 @@
 #define MAX_ARGS_LEN (size_t)200
 #define MAX_USERNAME_LEN (size_t)256+1
 #define MAX_BG_TASKS (size_t)100
-#define MAX_NUM_CONTENTS (size_t)500
+#define MAX_NUM_CONTENTS (size_t)1024
 #define MAX_HISTORY (size_t)20
 #define MAX_PID_LEN (size_t)10
 
