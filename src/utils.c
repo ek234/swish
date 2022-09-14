@@ -19,8 +19,7 @@ char* parsePath ( char* path ) {
 			perror("malloc");
 			return NULL;
 		}
-		strcpy(dir, homedir);
-		strcat(dir, path+1);
+		sprintf(dir, "%s%s", homedir, &path[1]);
 	}
 	else {
 		dir = strdup(path);

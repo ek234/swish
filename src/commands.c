@@ -151,9 +151,7 @@ int ls ( int argc, char* argv[] ) {
 
 			for ( int i = 0; i < num_entries; i++ ) {
 				char* entry_path = malloc( (strlen(query_path) + 1 + strlen(entries[i]->d_name) + 1) * sizeof(char) );
-				strcpy(entry_path, query_path);
-				strcat(entry_path, "/");
-				strcat(entry_path, entries[i]->d_name);
+				sprintf(entry_path, "%s/%s", query_path, entries[i]->d_name);
 				struct stat st;
 				if ( stat(entry_path, &st) == -1 ) {
 					perror(entry_path);
