@@ -14,6 +14,9 @@ int ptime;
 int history_count;
 char* history[MAX_HISTORY];
 
+int BASE_STDIN_FD;
+int BASE_STDOUT_FD;
+
 pid_t bg_tasks[MAX_BG_TASKS] = {0};
 
 int init () {
@@ -92,6 +95,9 @@ int init () {
 		free(hfilepath);
 	}
 
+	BASE_STDIN_FD  = dup(  STDIN_FILENO );
+	BASE_STDOUT_FD = dup( STDOUT_FILENO );
+
 	printf("Welcome to the shell, %s!\n", username);
 
 	return 0;
@@ -127,6 +133,9 @@ int deinit () {
 	free(hostname);
 	free(cwd);
 	free(owd);
+
+	close(BASE_STDIN_FD);
+	close(BASE_STDOUT_FD);
 
 	return 0;
 }

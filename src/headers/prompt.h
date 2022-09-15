@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <assert.h>
 #include <time.h>
+#include <fcntl.h>
 #include "./def.h"
 #include "./colors.h"
 
@@ -23,6 +24,8 @@ extern pid_t bg_tasks[];
 extern int ptime;
 extern int history_count;
 extern char* history[];
+extern int BASE_STDIN_FD;
+extern int BASE_STDOUT_FD;
 
 extern int commands ( int, char* [], int );
 
