@@ -18,6 +18,8 @@ extern char* owd;
 extern int pestatus;
 extern int history_count;
 extern char* history[];
+extern int BASE_STDIN_FD;
+extern int BASE_STDOUT_FD;
 
 extern int filecmp( const void* a, const void* b );
 extern char* parsePath ( char* );

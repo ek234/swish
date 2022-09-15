@@ -47,30 +47,54 @@ int prompt () {
 		return CONTINUE_AFTER_SHELL_ERROR;
 	}
 
+	int nextinfd = STDIN_FILENO;
+	int fildes[2];
+
 	char* input_ite = input;
 	while (1) {
 
-		char* command = strtok_r(NULL, ";&", &input_ite);
+		char* command = strtok_r(NULL, ";&|", &input_ite);
 		if (command == NULL)
 			break;
 
-		int bg_task_id = 0;
-		if ( input_ref[input_ite-1-input] == '&' ) {
-			// BG task;;; other wise it is FG task
-			for ( int i = 0; i < MAX_BG_TASKS; i++ ) {
-				if (bg_tasks[i] == 0) {
-					bg_task_id = i+1;
-					break;
-				}
-			}
-			if ( bg_task_id == 0 ) {
-				fprintf(stderr, "Background tasks: Number of background tasks exceeded\n");
-				return CONTINUE_AFTER_SHELL_ERROR;
-			}
-		}
-
-		int infd = STDIN_FILENO;
+		int  infd = nextinfd;
 		int outfd = STDOUT_FILENO;
+		nextinfd = STDIN_FILENO;
+
+		int bg_task_id = 0;
+		// treat end of command as foreground task (';')
+		char situation = input_ite-input >= input_len ? ';' : input_ref[input_ite-1-input];
+		switch ( situation ) {
+			case '&' :
+				// BG task
+				for ( int i = 0; i < MAX_BG_TASKS; i++ ) {
+					if (bg_tasks[i] == 0) {
+						bg_task_id = i+1;
+						break;
+					}
+				}
+				if ( bg_task_id == 0 ) {
+					fprintf(stderr, "Background tasks: Number of background tasks exceeded\n");
+					return CONTINUE_AFTER_SHELL_ERROR;
+				}
+				break;
+			case '|' :
+				// piped task
+				fildes[0] = fildes[1] = -1;
+				if ( pipe(fildes) == -1 ) {
+					perror("Pipe");
+					return CONTINUE_AFTER_SHELL_ERROR;
+				}
+				nextinfd = fildes[0];
+				outfd = fildes[1];
+				break;
+			case ';' :
+				// FG task
+				break;
+			default :
+				fprintf(stderr, "How did we get here: %x : %c\n", situation, situation);
+				return CONTINUE_AFTER_SHELL_ERROR;
+		}
 
 		char* args[MAX_NUM_ARGS];
 		size_t num_args = 0;
