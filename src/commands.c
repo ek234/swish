@@ -80,13 +80,12 @@ int ls ( int argc, char* argv[] ) {
 	int FLAG_all = 0;
 	int FLAG_long = 0;
 
-	// dont print error
-	opterr = 0;
 	// reset getopt to start
-	optind = 1;
+	optind = 0;
 	{
 		loop:;
-			 switch ( getopt(argc, argv, "al") ) {
+			 int c =  getopt(argc, argv, "al");
+			 switch (c) {
 				 case 'a' :
 					 FLAG_all = 1;
 					 break;
@@ -95,8 +94,8 @@ int ls ( int argc, char* argv[] ) {
 					 break;
 				 case -1 :
 					 goto processed;
-				 case '?' :
-					 fprintf(stderr, "ls: invalid option %d\n", optopt);
+				 default :
+					 fprintf(stderr, "ls: invalid option - '%c'(%#x)\n", c, c);
 					 return -1;
 			 }
 			 goto loop;
