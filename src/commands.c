@@ -79,31 +79,30 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 }
 
 int ls ( int argc, char* argv[] ) {
-	int FLAG_all = 0;
-	int FLAG_long = 0;
+	void (*printfn) ( char*, struct stat* ) = printlsn;
 
-	optind = 0;
+	int FLAG_all = 0;
+
 	{
+		opterr = 0;
+		optind = 0;
 		loop:;
-			 int c =  getopt(argc, argv, "al");
-			 switch (c) {
+			 switch ( getopt(argc, argv, "al") ) {
 				 case 'a' :
 					 FLAG_all = 1;
 					 break;
 				 case 'l' :
-					 FLAG_long = 1;
+					 printfn = printlsl;
 					 break;
 				 case -1 :
 					 goto processed;
 				 default :
-					 fprintf(stderr, "ls: invalid option - '%c'(%#x)\n", c, c);
+					 fprintf(stderr, "%s: invalid option - '%c' (%#x)\n", argv[0], optopt, optopt);
 					 return -1;
 			 }
 			 goto loop;
 		processed:;
 	}
-
-	void (*printfn) ( char*, struct stat* ) = FLAG_long ? printlsl : printlsn;
 
 	char** queries = &argv[optind];
 	int query_count = argc - optind;
@@ -299,10 +298,18 @@ int pinfo ( int argc, char* argv[] ) {
 	int isFG = 0;
 	long unsigned vmemsize = -1;
 
-	size_t len = 1024;
 	char line[1024];
 	char* line_ite = line;
-	size_t len_read = read(stat_fd, line, len);
+	size_t len_read = read(stat_fd, line, 1024);
+	if ( len_read < 0 ) {
+		perror("reading stat file");
+		free(ppath);
+		free(exe_path);
+		free(path_to_exe);
+		free(stat_path);
+		close(stat_fd);
+		return -1;
+	}
 
 	int i = 0;
 	char* val;
@@ -338,11 +345,11 @@ int discover ( int argc, char* argv[] ) {
 	int FLAG_dir = 0;
 	int FLAG_fil = 0;
 
-	optind = 0;
 	{
+		opterr = 0;
+		optind = 0;
 		loop:;
-			 int c =  getopt(argc, argv, "al");
-			 switch ( c ) {
+			 switch ( getopt(argc, argv, "df") ) {
 				 case 'd' :
 					 FLAG_dir = 1;
 					 break;
@@ -352,7 +359,7 @@ int discover ( int argc, char* argv[] ) {
 				 case -1 :
 					 goto processed;
 				 default :
-					 fprintf(stderr, "discover: invalid option - '%c'(%#x)\n", c, c);
+					 fprintf(stderr, "%s: invalid option - '%c' (%#x)\n", argv[0], optopt, optopt);
 					 return -1;
 			 }
 			 goto loop;
@@ -366,7 +373,7 @@ int discover ( int argc, char* argv[] ) {
 		struct stat statbuf;
 		if ( ( stat(arg, &statbuf) == 0 ) && ( S_ISDIR(statbuf.st_mode) ) ) {
 			if ( arguments[0] ) {
-				fprintf(stderr, "discover: %s: Multiple directories specified\n", arg);
+				fprintf(stderr, "%s: %s: Multiple directories specified\n", argv[0], arg);
 				for ( int i = 0; i < 2; i++ )
 					if ( arguments[i] )
 						free(arguments[i]);
@@ -375,7 +382,7 @@ int discover ( int argc, char* argv[] ) {
 			arguments[0] = arg;
 		} else {
 			if ( arguments[1] ) {
-				fprintf(stderr, "discover: %s: Multiple target files specified\n", arg);
+				fprintf(stderr, "%s: %s: Multiple target files specified\n", argv[0], arg);
 				for ( int i = 0; i < 2; i++ )
 					if ( arguments[i] )
 						free(arguments[i]);
