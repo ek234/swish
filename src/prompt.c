@@ -67,9 +67,7 @@ int prompt () {
 		nextinfd = STDIN_FILENO;
 
 		int bg_task_id = 0;
-		// treat end of command as foreground task (';')
-		char situation = input_ite-input >= input_len ? ';' : input_ref[input_ite-1-input];
-		switch ( situation ) {
+		switch ( input_ref[input_ite-1-input] ) {
 			case '&' :
 				// BG task
 				for ( int i = 0; i < MAX_BG_TASKS; i++ ) {
@@ -94,11 +92,10 @@ int prompt () {
 				outfd = fildes[1];
 				break;
 			case ';' :
+			default :
+				// treat end of command as foreground task (';')
 				// FG task
 				break;
-			default :
-				fprintf(stderr, "How did we get here: %x : %c\n", situation, situation);
-				return CONTINUE_AFTER_SHELL_ERROR;
 		}
 
 		char* args[MAX_NUM_ARGS];
