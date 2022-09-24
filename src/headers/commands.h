@@ -36,5 +36,6 @@ int pinfo ( int, char* [] );
 int recursivelyDiscover ( char*, char*, int, int );
 int discover ( int, char* [] );
 int jobs ( int, char* [] );
+int sig ( int, char* [] );
 
 #endif

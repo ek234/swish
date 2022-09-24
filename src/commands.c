@@ -55,6 +55,11 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 		return CONTINUE_NORMAL;
 	}
 
+	else if ( !strcmp( argv[0], "sig" ) ) {
+		pestatus = sig(argc, argv);
+		return CONTINUE_NORMAL;
+	}
+
 	else {
 		if ( !bg_task_id ) {
 			pid_t child_pid = fork();
@@ -520,5 +525,32 @@ int jobs ( int argc, char* argv[] ) {
 	}
 
 	free(stat_path);
+	return 0;
+}
+
+int sig ( int argc, char* argv[] ) {
+	if ( argc < 3 || argc > 3 ) {
+		fprintf(stderr, "%s: usage: sig [job_id] [signal]\n", argv[0]);
+		return -1;
+	}
+
+	int job_id = atoi(argv[1]);
+	if ( job_id < 0 || job_id >= MAX_BG_TASKS || !bg_tasks[job_id] ) {
+		fprintf(stderr, "%s: invalid job id %d\n", argv[0], job_id);
+		return -1;
+	}
+
+	int sig = atoi(argv[2]);
+	if ( sig < 0 || sig > 31 ) {
+		fprintf(stderr, "%s: invalid signal %d\n", argv[0], sig);
+		return -1;
+	}
+
+	if ( kill(bg_tasks[job_id], sig) == -1 ) {
+		perror(argv[0]);
+		return -1;
+	}
+
+	printf("signal %d sent to process %d\n", sig, bg_tasks[job_id]);
 	return 0;
 }
