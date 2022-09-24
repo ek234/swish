@@ -80,7 +80,6 @@ int ls ( int argc, char* argv[] ) {
 	int FLAG_all = 0;
 	int FLAG_long = 0;
 
-	// reset getopt to start
 	optind = 0;
 	{
 		loop:;
@@ -337,11 +336,11 @@ int discover ( int argc, char* argv[] ) {
 	int FLAG_dir = 0;
 	int FLAG_fil = 0;
 
-	opterr = 0;
-	optind = 1;
+	optind = 0;
 	{
 		loop:;
-			 switch ( getopt(argc, argv, "df") ) {
+			 int c =  getopt(argc, argv, "al");
+			 switch ( c ) {
 				 case 'd' :
 					 FLAG_dir = 1;
 					 break;
@@ -350,8 +349,8 @@ int discover ( int argc, char* argv[] ) {
 					 break;
 				 case -1 :
 					 goto processed;
-				 case '?' :
-					 fprintf(stderr, "discover: invalid option %c\n", optopt);
+				 default :
+					 fprintf(stderr, "discover: invalid option - '%c'(%#x)\n", c, c);
 					 return -1;
 			 }
 			 goto loop;
