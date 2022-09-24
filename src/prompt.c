@@ -70,16 +70,9 @@ int prompt () {
 		switch ( input_ref[input_ite-1-input] ) {
 			case '&' :
 				// BG task
-				for ( int i = 0; i < MAX_BG_TASKS; i++ ) {
-					if (bg_tasks[i] == 0) {
-						bg_task_id = i+1;
-						break;
-					}
-				}
-				if ( bg_task_id == 0 ) {
-					fprintf(stderr, "Background tasks: Number of background tasks exceeded\n");
+				bg_task_id = getnextbgid();
+				if ( bg_task_id == -1 )
 					return CONTINUE_AFTER_SHELL_ERROR;
-				}
 				break;
 			case '|' :
 				// piped task
@@ -228,7 +221,7 @@ int prompt () {
 	for ( int i = 0; i < MAX_BG_TASKS; i++ )
 		if ( !!bg_tasks[i] ) {
 			int status;
-			pid_t pid = waitpid(bg_tasks[i], &status, WNOHANG | WUNTRACED);
+			pid_t pid = waitpid(bg_tasks[i], &status, WNOHANG);
 			if ( pid < 0) {
 				printf("pid %d by task %d id %d ", pid, i+1, bg_tasks[i]);
 				perror("bg task");
@@ -240,8 +233,6 @@ int prompt () {
 				} else if ( WIFSIGNALED(status) ) {
 					fprintf(stderr, "[%d] %d killed by signal %d\n", i+1, bg_tasks[i], WTERMSIG(status));
 					bg_tasks[i] = 0;
-				} else if ( WIFSTOPPED(status) ) {
-					fprintf(stderr, "[%d] %d stopped by signal %d\n", i+1, bg_tasks[i], WSTOPSIG(status));
 				}
 			}
 		}

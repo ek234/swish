@@ -28,6 +28,7 @@ extern int BASE_STDIN_FD;
 extern int BASE_STDOUT_FD;
 
 extern int commands ( int, char* [], int );
+extern int getnextbgid ();
 
 int prompt ();
 void printprompt ();

@@ -68,3 +68,11 @@ void printlsn ( char* name, struct stat* st ) {
 			RESET
 		  );
 }
+
+int getnextbgid () {
+	for ( int i = 0; i < MAX_BG_TASKS; i++ )
+		if (bg_tasks[i] == 0)
+			return i+1;
+	fprintf(stderr, "Background tasks: Number of background tasks exceeded\n");
+	return -1;
+}

@@ -12,15 +12,18 @@
 #include <time.h>
 #include <dirent.h>
 #include "./colors.h"
+#include "./def.h"
 
 extern char* homedir;
 extern char* cwd;
 extern char* owd;
 extern int pestatus;
+extern int bg_tasks[];
 
 int filecmp ( const void* a, const void* b );
 char* parsePath ( char* path );
 void printlsl ( char*, struct stat* );
 void printlsn ( char*, struct stat* );
+int getnextbgid ();
 
 #endif

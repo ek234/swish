@@ -50,13 +50,18 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 		return CONTINUE_NORMAL;
 	}
 
+	else if ( !strcmp( argv[0], "jobs" ) ) {
+		pestatus = jobs(argc, argv);
+		return CONTINUE_NORMAL;
+	}
+
 	else {
 		if ( !bg_task_id ) {
 			pid_t child_pid = fork();
 			if ( child_pid > 0 ) {
 				int status;
 				cpid = child_pid;
-				waitpid( child_pid, &status, 0 );
+				waitpid( child_pid, &status, WUNTRACED );
 				cpid = 0;
 				pestatus = WIFEXITED(status) ? WEXITSTATUS(status) : -100;
 				return CONTINUE_NORMAL;
@@ -447,5 +452,73 @@ int recursivelyDiscover ( char* dir, char* fil, int FLAG_dir, int FLAG_fil ) {
 		free(entry_path);
 	}
 
+	return 0;
+}
+
+int jobs ( int argc, char* argv[] ) {
+	int FLAG_r = 0;
+	int FLAG_s = 0;
+
+	{
+		opterr = 0;
+		optind = 0;
+		loop:;
+			 switch ( getopt(argc, argv, "rs") ) {
+				 case 'r' :
+					 FLAG_r = 1;
+					 break;
+				 case 's' :
+					 FLAG_s = 1;
+					 break;
+				 case -1 :
+					 goto processed;
+				 default :
+					 fprintf(stderr, "%s: invalid option - '%c' (%#x)\n", argv[0], optopt, optopt);
+					 return -1;
+			 }
+			 goto loop;
+		processed:;
+	}
+	if ( !FLAG_r && !FLAG_s )
+		FLAG_s = FLAG_r = 1;
+
+	char* stat_path = malloc( (strlen("/proc/") + MAX_PID_LEN + strlen("/stat") + 1) * sizeof(char) );
+	if ( !stat_path ) {
+		perror("malloc");
+		return -1;
+	}
+
+	for ( int i = 0; i < MAX_BG_TASKS; i++ ) {
+		if ( !!bg_tasks[i] ) {
+			sprintf(stat_path, "/proc/%d/stat", bg_tasks[i]);
+			int stat_fd = open(stat_path, O_RDONLY);
+			if ( stat_fd < 0 ) {
+				fprintf(stderr, "%s: process %d does not exist\n", argv[0], bg_tasks[i]);
+				continue;
+			}
+
+			char line[1024];
+			size_t len_read = read(stat_fd, line, 1024);
+			close(stat_fd);
+
+			if ( len_read < 0 ) {
+				perror("reading /proc/[pid]/stat");
+				free(stat_path);
+				return -1;
+			}
+			char* line_ite = line;
+
+			char* pid = strtok_r(NULL, " ", &line_ite);
+			char* name = strtok_r(NULL, " ", &line_ite);
+			char* status = strtok_r(NULL, " ", &line_ite);
+
+			if ( !strncmp(status, "T", 1) )
+				FLAG_s && printf("%d: stopped %d %s\n", i, bg_tasks[i], name);
+			else
+				FLAG_r && printf("%d: running %d %s\n", i, bg_tasks[i], name);
+		}
+	}
+
+	free(stat_path);
 	return 0;
 }

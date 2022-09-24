@@ -18,6 +18,7 @@ extern char* owd;
 extern int pestatus;
 extern int history_count;
 extern char* history[];
+extern pid_t bg_tasks[];
 extern int BASE_STDIN_FD;
 extern int BASE_STDOUT_FD;
 extern pid_t cpid;
@@ -34,5 +35,6 @@ int printHistory ( int, char* [] );
 int pinfo ( int, char* [] );
 int recursivelyDiscover ( char*, char*, int, int );
 int discover ( int, char* [] );
+int jobs ( int, char* [] );
 
 #endif

@@ -148,11 +148,15 @@ int deinit () {
 }
 
 void handle_signal ( int sig ) {
-	switch ( sig ) {
-		case SIGINT :
-		case SIGTSTP :
-			if ( cpid != 0 )
-				kill(cpid, sig);
-			break;
+	if ( cpid == 0 )
+		return;
+
+	if ( sig == SIGTSTP ) {
+		int bg_id = getnextbgid();
+		if ( bg_id < 0 )
+			return;
+		bg_tasks[bg_id] = cpid;
 	}
+
+	kill(cpid, sig);
 }

@@ -12,5 +12,6 @@
 int init ();
 int deinit ();
 void handle_signal ( int );
+int getnextbgid ();
 
 #endif
