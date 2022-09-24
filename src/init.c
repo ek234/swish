@@ -17,9 +17,14 @@ char* history[MAX_HISTORY];
 int BASE_STDIN_FD;
 int BASE_STDOUT_FD;
 
+pid_t cpid;
+
 pid_t bg_tasks[MAX_BG_TASKS] = {0};
 
 int init () {
+
+	signal( SIGINT, handle_signal );
+	signal( SIGTSTP, handle_signal );
 
 	user_details = getpwuid(getuid());
 	if ( !user_details ) {
@@ -98,6 +103,8 @@ int init () {
 	BASE_STDIN_FD  = dup(  STDIN_FILENO );
 	BASE_STDOUT_FD = dup( STDOUT_FILENO );
 
+	cpid = 0;
+
 	printf("Welcome to the shell, %s!\n", username);
 
 	return 0;
@@ -138,4 +145,14 @@ int deinit () {
 	close(BASE_STDOUT_FD);
 
 	return 0;
+}
+
+void handle_signal ( int sig ) {
+	switch ( sig ) {
+		case SIGINT :
+		case SIGTSTP :
+			if ( cpid != 0 )
+				kill(cpid, sig);
+			break;
+	}
 }

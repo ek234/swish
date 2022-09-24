@@ -11,5 +11,6 @@
 
 int init ();
 int deinit ();
+void handle_signal ( int );
 
 #endif

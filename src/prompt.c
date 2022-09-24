@@ -30,9 +30,14 @@ int prompt () {
 			case '\t' :
 				// TODO
 				break;
+			case 0xc :
+				// TODO : clear prompt
+				break;
 			case EOF :
+				printf("\n");
 				return EXIT_NORMAL;
 			default :
+				//printf("%#x %c\n", c, c);
 				if ( input_len > MAX_COMMAND_LEN-1 ) {
 					// TODO
 				}

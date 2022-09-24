@@ -55,7 +55,9 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 			pid_t child_pid = fork();
 			if ( child_pid > 0 ) {
 				int status;
+				cpid = child_pid;
 				waitpid( child_pid, &status, 0 );
+				cpid = 0;
 				pestatus = WIFEXITED(status) ? WEXITSTATUS(status) : -100;
 				return CONTINUE_NORMAL;
 			} else if ( child_pid == 0 ) {
