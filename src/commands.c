@@ -492,6 +492,14 @@ int jobs ( int argc, char* argv[] ) {
 		perror("malloc");
 		return -1;
 	}
+	char* cmd_path = malloc( (strlen("/proc/") + MAX_PID_LEN + strlen("/cmdline") + 1) * sizeof(char) );
+	if ( !stat_path ) {
+		perror("malloc");
+		free(stat_path);
+		return -1;
+	}
+
+	char line[1024];
 
 	for ( int i = 0; i < MAX_BG_TASKS; i++ ) {
 		if ( !!bg_tasks[i] ) {
@@ -502,29 +510,50 @@ int jobs ( int argc, char* argv[] ) {
 				continue;
 			}
 
-			char line[1024];
 			size_t len_read = read(stat_fd, line, 1024);
 			close(stat_fd);
 
 			if ( len_read < 0 ) {
 				perror("reading /proc/[pid]/stat");
 				free(stat_path);
+				free(cmd_path);
 				return -1;
 			}
 			char* line_ite = line;
 
 			char* pid = strtok_r(NULL, " ", &line_ite);
-			char* name = strtok_r(NULL, " ", &line_ite);
+			strtok_r(NULL, " ", &line_ite);
 			char* status = strtok_r(NULL, " ", &line_ite);
 
+			sprintf(cmd_path, "/proc/%d/cmdline", bg_tasks[i]);
+			int cmd_fd = open(cmd_path, O_RDONLY);
+			if ( cmd_fd < 0 ) {
+				fprintf(stderr, "%s: process %d does not exist\n", argv[0], bg_tasks[i]);
+				continue;
+			}
+			len_read = read( cmd_fd, line, 1024 );
+			close(cmd_fd);
+			if ( len_read < 0 ) {
+				perror("reading /proc/[pid]/cmdline");
+				free(stat_path);
+				free(cmd_path);
+				return -1;
+			}
+			// replace null bytes with spaces but dont change the last null byte
+			for ( int i = 0; i < len_read-1; i++ )
+				if ( line[i] == '\0' )
+					line[i] = ' ';
+			char* name = line;
+
 			if ( !strncmp(status, "T", 1) )
-				FLAG_s && printf("%d: stopped %d %s\n", i, bg_tasks[i], name);
+				FLAG_s && printf("[%d]: stopped `%s` (%d)\n", i, name, bg_tasks[i]);
 			else
-				FLAG_r && printf("%d: running %d %s\n", i, bg_tasks[i], name);
+				FLAG_r && printf("[%d]: running `%s` (%d)\n", i, name, bg_tasks[i]);
 		}
 	}
 
 	free(stat_path);
+	free(cmd_path);
 	return 0;
 }
 
