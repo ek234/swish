@@ -611,6 +611,7 @@ int makefg ( pid_t pid ) {
 		if ( bg_id < 0 )
 			return -1;
 		bg_tasks[bg_id-1] = pid;
+		fprintf(stderr, "\n[%d] %d stopped\n", bg_id, bg_tasks[bg_id-1]);
 	}
 	cpid = 0;
 	pestatus = WIFEXITED(status) ? WEXITSTATUS(status) : -100;
