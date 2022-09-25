@@ -43,8 +43,11 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 	}
 
 	else if ( !strcmp( argv[0], "echo" ) ) {
-		for ( int i = 1; argv[i] != NULL; i++ )
-			printf("%s ", argv[i]);
+		for ( int i = 1; argv[i] != NULL; i++ ) {
+			printf("%s", argv[i]);
+			if ( argv[i+1] != NULL )
+				printf(" ");
+		}
 		printf("\n");
 		pestatus = 0;
 		return CONTINUE_NORMAL;
