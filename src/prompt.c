@@ -167,54 +167,35 @@ int prompt () {
 				break;
 		}
 
-		if ( !!bg_task_id ) {
-			pid_t child_pid = fork();
-			if (child_pid > 0) {
-				if ( infd != STDIN_FILENO )
-					close(infd);
-				if ( outfd != STDOUT_FILENO )
-					close(outfd);
-				printf("[%d] %d started %s\n", bg_task_id, child_pid, args[0]);
-				bg_tasks[bg_task_id-1] = child_pid;
-			} else if ( child_pid == 0 ) {
-				// do not store return in pestatus
-				dup2(  infd,  STDIN_FILENO );
-				dup2( outfd, STDOUT_FILENO );
-				exit(commands(num_args-1, args, bg_task_id));
-			} else {
-				perror("subshell");
-				return CONTINUE_AFTER_SHELL_ERROR;
-			}
-		} else {
+		if ( dup2( infd, STDIN_FILENO ) == -1 ) {
+			perror("setting stdin");
+			return CONTINUE_AFTER_SHELL_ERROR;
+		}
+		if ( infd != STDIN_FILENO )
+			close(infd);
 
-			if ( dup2( infd, STDIN_FILENO ) == -1 ) {
-				perror("setting stdin");
-				return CONTINUE_AFTER_SHELL_ERROR;
-			}
-			if ( infd != STDIN_FILENO )
-				close(infd);
+		if ( dup2( outfd, STDOUT_FILENO ) == -1 ) {
+			perror("setting stdout");
+			return CONTINUE_AFTER_SHELL_ERROR;
+		}
+		if ( outfd != STDOUT_FILENO )
+			close(outfd);
 
-			if ( dup2( outfd, STDOUT_FILENO ) == -1 ) {
-				perror("setting stdout");
-				return CONTINUE_AFTER_SHELL_ERROR;
-			}
-			if ( outfd != STDOUT_FILENO )
-				close(outfd);
-
-			time_t start = time(NULL);
-			int ret_val = commands(num_args-1, args, bg_task_id);
+		time_t start = time(NULL);
+		int ret_val = commands(num_args-1, args, bg_task_id);
+		if ( !bg_task_id ) {
 			if ( ret_val > final_ret_val )
 				final_ret_val = ret_val;
 			ptime = time(NULL) - start;
+		}
 
-			if ( (dup2(  BASE_STDIN_FD,  STDIN_FILENO )) == -1 ) {
-				perror("resetting stdin");
-				return CONTINUE_AFTER_SHELL_ERROR;
-			}
-			if ( (dup2( BASE_STDOUT_FD, STDOUT_FILENO )) == -1 ) {
-				perror("resetting stdout");
-				return CONTINUE_AFTER_SHELL_ERROR;
-			}
+		if ( (dup2(  BASE_STDIN_FD,  STDIN_FILENO )) == -1 ) {
+			perror("resetting stdin");
+			return CONTINUE_AFTER_SHELL_ERROR;
+		}
+		if ( (dup2( BASE_STDOUT_FD, STDOUT_FILENO )) == -1 ) {
+			perror("resetting stdout");
+			return CONTINUE_AFTER_SHELL_ERROR;
 		}
 	}
 

@@ -63,28 +63,31 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 		return CONTINUE_NORMAL;
 	}
 
+	else if ( !strcmp( argv[0], "fg" ) || !strcmp( argv[0], "bg" ) ) {
+		pestatus = changeground(argc, argv);
+		return CONTINUE_NORMAL;
+	}
+
 	else {
-		if ( !bg_task_id ) {
-			pid_t child_pid = fork();
-			if ( child_pid > 0 ) {
-				int status;
-				cpid = child_pid;
-				waitpid( child_pid, &status, WUNTRACED );
-				cpid = 0;
-				pestatus = WIFEXITED(status) ? WEXITSTATUS(status) : -100;
-				return CONTINUE_NORMAL;
-			} else if ( child_pid == 0 ) {
-				int err = execvp(argv[0], argv);
-				perror(argv[0]);
-				exit(err);
+		pid_t child_pid = fork();
+		if ( child_pid > 0 ) {
+			if ( !bg_task_id ) {
+				int waiter_exit_status = makefg(child_pid);
+				if ( waiter_exit_status )
+					return CONTINUE_AFTER_SHELL_ERROR;
 			} else {
-				perror("execvp");
-				pestatus = -1;
-				return CONTINUE_AFTER_SHELL_ERROR;
+				int bg_id = getnextbgid();
+				if ( bg_id < 0 )
+					return -1;
+				bg_tasks[bg_id] = child_pid;
 			}
-		} else {
-			execvp(argv[0], argv);
+			return CONTINUE_NORMAL;
+		} else if ( child_pid == 0 ) {
+			int err = execvp(argv[0], argv);
 			perror(argv[0]);
+			exit(err);
+		} else {
+			perror("execvp");
 			pestatus = -1;
 			return CONTINUE_AFTER_SHELL_ERROR;
 		}
@@ -584,5 +587,47 @@ int sig ( int argc, char* argv[] ) {
 	}
 
 	printf("signal %d sent to process %d\n", sig, bg_tasks[job_id]);
+	return 0;
+}
+
+int makefg ( pid_t pid ) {
+	cpid = pid;
+	int status;
+	waitpid( pid, &status, WUNTRACED );
+	if ( WIFSTOPPED(status) ) {
+		int bg_id = getnextbgid();
+		if ( bg_id < 0 )
+			return -1;
+		bg_tasks[bg_id] = pid;
+	}
+	cpid = 0;
+	pestatus = WIFEXITED(status) ? WEXITSTATUS(status) : -100;
+	return 0;
+}
+
+int changeground ( int argc, char* argv[] ) {
+	if ( argc < 2 || argc > 2 ) {
+		fprintf(stderr, "%s: usage: %s [job_id]\n", argv[0], argv[0]);
+		return -1;
+	}
+
+	int job_id = atoi(argv[1]);
+	if ( job_id < 0 || job_id >= MAX_BG_TASKS || !bg_tasks[job_id] ) {
+		fprintf(stderr, "%s: invalid job id %d\n", argv[0], job_id);
+		return -1;
+	}
+
+	if ( kill(bg_tasks[job_id], SIGCONT) == -1 ) {
+		perror(argv[0]);
+		return -1;
+	}
+
+	if ( !strcmp(argv[0], "fg") ) {
+		int pid = bg_tasks[job_id];
+		bg_tasks[job_id] = 0;
+		if ( makefg(pid) == -1 )
+			return -1;
+	}
+
 	return 0;
 }

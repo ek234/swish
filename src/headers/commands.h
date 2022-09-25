@@ -27,6 +27,7 @@ extern int filecmp( const void* a, const void* b );
 extern char* parsePath ( char* );
 extern void printlsl ( char*, struct stat* );
 extern void printlsn ( char*, struct stat* );
+extern int getnextbgid ();
 
 int commands ( int, char* [], int );
 int cd ( int, char* [] );
@@ -37,5 +38,7 @@ int recursivelyDiscover ( char*, char*, int, int );
 int discover ( int, char* [] );
 int jobs ( int, char* [] );
 int sig ( int, char* [] );
+int changeground ( int, char* [] );
+int makefg ( pid_t pid );
 
 #endif
