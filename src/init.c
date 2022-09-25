@@ -23,8 +23,24 @@ pid_t bg_tasks[MAX_BG_TASKS] = {0};
 
 int init () {
 
-	signal( SIGINT, handle_signal );
-	signal( SIGTSTP, handle_signal );
+	{
+		struct sigaction act;
+
+		memset(&act, 0, sizeof act);
+		sigemptyset(&act.sa_mask);
+		act.sa_handler = handle_signal;
+		act.sa_flags = 0;
+
+		if (sigaction(SIGTSTP, &act, NULL) == -1) {
+			perror("sigint sigaction");
+			return 1;
+		}
+
+		if (sigaction(SIGINT, &act, NULL) == -1) {
+			perror("sigint sigaction");
+			return 1;
+		}
+	}
 
 	user_details = getpwuid(getuid());
 	if ( !user_details ) {
@@ -151,12 +167,27 @@ void handle_signal ( int sig ) {
 	if ( cpid == 0 )
 		return;
 
-	if ( sig == SIGTSTP ) {
-		int bg_id = getnextbgid();
-		if ( bg_id < 0 )
-			return;
-		bg_tasks[bg_id] = cpid;
+	int bg_id = -1;
+
+	switch ( sig ) {
+		case SIGINT :
+			break;
+		case SIGTSTP :
+			bg_id = getnextbgid();
+			if ( bg_id < 0 )
+				return;
+			bg_tasks[bg_id] = cpid;
+			break;
+		default :
+			printf("how did we get here? %d\n", sig);
+			break;
 	}
 
-	kill(cpid, sig);
+	if ( kill(cpid, sig) < 0 ) {
+		perror("Shell signals");
+		if ( bg_id >= 0 )
+			bg_tasks[bg_id] = 0;
+	}
+
+	return;
 }
