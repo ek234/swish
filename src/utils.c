@@ -56,7 +56,7 @@ void printlsl ( char* name, struct stat* st ) {
 
 void printlsn ( char* name, struct stat* st ) {
 	printf(
-			"%s%s%s  ",
+			"%s%s%s\t",
 			(
 				S_ISDIR(st->st_mode)
 					? BLU

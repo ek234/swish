@@ -15,38 +15,80 @@ void printprompt () {
 int prompt () {
 
 	printprompt();
+	for ( int i = 0; i < input_cursor; i++ )
+		printf("%c", input_buffer[i]);
 
 	int final_ret_val = CONTINUE_NORMAL;
 
-	char input[MAX_COMMAND_LEN];
-	size_t input_len = 0;
+	char* input = NULL;
 
 	while (1) {
 		int c = fgetc(stdin);
+		if (!iscntrl(c))
+			printf("%c", c);
+		//fprintf(stderr, "\n%#x %c\n", c, c);
 		switch (c) {
 			case '\n' :
-				input[input_len] = '\0';
+				printf("\n");
+				input_buffer[input_cursor] = '\0';
+				input = strdup(input_buffer);
+				input_cursor = 0;
 				goto input_read;
+			case 0x7f :
+			case '\b' :
+				if (input_cursor > 0) {
+					input_cursor--;
+					printf("\b \b");
+				}
+				break;
 			case '\t' :
-				// TODO
+				{
+					input_buffer[input_cursor] = '\0';
+					char* tocomplete = strrchr(input_buffer, ' ');
+					if (tocomplete == NULL)
+						tocomplete = input_buffer;
+					else
+						tocomplete++;
+					char* completion = tabcomplete(tocomplete);
+					if (completion != NULL) {
+						int completion_len = strlen(completion);
+						int tocomplete_len = strlen(tocomplete);
+						if (completion_len > tocomplete_len) {
+							if ( completion_len - tocomplete_len + input_cursor >= MAX_COMMAND_LEN ) {
+								fprintf(stderr, "Input buffer overflow\n");
+								input_cursor = 0;
+								return CONTINUE_AFTER_SHELL_ERROR;
+							}
+							for (int i = tocomplete_len; i < completion_len; i++)
+								input_buffer[input_cursor++] = completion[i];
+							printf("%s", &completion[tocomplete_len]);
+						}
+						free(completion);
+					} else {
+						printf("\n");
+						return CONTINUE_NORMAL;
+					}
+				}
 				break;
 			case 0xc :
-				// TODO : clear prompt
-				break;
+				printf("\033[H\033[J");
+				return CONTINUE_NORMAL;
+			case 0x4 :
 			case EOF :
 				printf("\n");
 				return EXIT_NORMAL;
 			default :
-				//printf("%#x %c\n", c, c);
-				if ( input_len > MAX_COMMAND_LEN-1 ) {
-					// TODO
+				if ( input_cursor > MAX_COMMAND_LEN-1 ) {
+					fprintf(stderr, "Input buffer overflow\n");
+					input_cursor = 0;
+					return CONTINUE_AFTER_SHELL_ERROR;
 				}
-				input[input_len++] = c;
+				input_buffer[input_cursor++] = c;
 		}
 	}
 	input_read:;
 
-	char* input_ref = strndup(input, input_len);
+	char* input_ref = strdup(input);
 	if ( !input_ref ) {
 		fprintf(stderr, "Input: Memory exceeded\n");
 		return CONTINUE_AFTER_SHELL_ERROR;
@@ -237,5 +279,6 @@ int prompt () {
 		}
 	}
 
+	free(input);
 	return final_ret_val;
 }

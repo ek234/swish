@@ -1,5 +1,8 @@
 #include "./headers/init.h"
 
+char input_buffer[MAX_COMMAND_LEN];
+size_t input_cursor;
+
 struct passwd* user_details;
 char* username;
 char* homedir;
@@ -20,6 +23,8 @@ int BASE_STDOUT_FD;
 pid_t cpid;
 
 pid_t bg_tasks[MAX_BG_TASKS] = {0};
+
+struct termios orig_termios;
 
 int init () {
 
@@ -80,6 +85,8 @@ int init () {
 	pestatus = 0;
 	ptime = 0;
 
+	input_cursor = 0;
+
 	history_count = 0;
 	{
 		char* hfilepath = parsePath(HISTORYFILE);
@@ -121,17 +128,28 @@ int init () {
 
 	cpid = 0;
 
+	if ( tcgetattr(STDIN_FILENO, &orig_termios) == -1 ) {
+		perror("tcgetattr");
+		return -1;
+	}
+	settermmode( TERMMODE_RAW );
+
 	printf("Welcome to the shell, %s!\n", username);
+
+	if (atexit(deinit) != 0) {
+		perror("atexit");
+		return -1;
+	}
 
 	return 0;
 }
 
-int deinit () {
+void deinit () {
 
 	{
 		char* hfilepath = parsePath(HISTORYFILE);
 		if ( hfilepath < 0 )
-			return -1;
+			return;
 
 		int start = history_count - MAX_HISTORY;
 		if ( start < 0 )
@@ -140,7 +158,7 @@ int deinit () {
 		FILE* historyfile = fopen(hfilepath, "w");
 		if ( !historyfile ) {
 			perror(hfilepath);
-			return -1;
+			return;
 		}
 
 		for ( int i = start; i < history_count; i++ ) {
@@ -160,7 +178,9 @@ int deinit () {
 	close(BASE_STDIN_FD);
 	close(BASE_STDOUT_FD);
 
-	return 0;
+	settermmode( TERMMODE_COOKED );
+
+	return;
 }
 
 void handle_signal ( int sig ) {
@@ -179,15 +199,36 @@ void handle_signal ( int sig ) {
 			bg_tasks[bg_id] = cpid;
 			break;
 		default :
-			printf("how did we get here? %d\n", sig);
+			write(STDERR_FILENO, "how did we get here?\n", 22);
 			break;
 	}
 
-	if ( kill(cpid, sig) < 0 ) {
-		perror("Shell signals");
-		if ( bg_id >= 0 )
-			bg_tasks[bg_id] = 0;
-	}
+//	if ( kill(cpid, sig) < 0 ) {
+//		perror("Shell signals");
+//		if ( bg_id >= 0 )
+//			bg_tasks[bg_id] = 0;
+//	}
 
 	return;
+}
+
+void settermmode ( enum termmode mode ) {
+	switch ( mode ) {
+		case TERMMODE_COOKED :
+			if ( tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1 )
+				perror("tcsetattr");
+			break;
+		case TERMMODE_RAW :
+			{
+				struct termios raw = orig_termios;
+				//raw.c_lflag &= ~(ICANON);
+				// TODO : why no echo
+				raw.c_lflag &= ~(ECHO | ICANON);
+				tcsetattr(STDIN_FILENO, 0, &raw);
+			}
+			break;
+		default :
+			printf("how did we get here? %d\n", mode);
+			break;
+	}
 }

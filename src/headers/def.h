@@ -23,4 +23,9 @@ enum main_ite_returns {
 	EXIT_AFTER_SHELL_ERROR
 };
 
+enum termmode {
+	TERMMODE_RAW,
+	TERMMODE_COOKED
+};
+
 #endif

@@ -11,11 +11,9 @@ int main () {
 
 			case EXIT_AFTER_SHELL_ERROR :
 			case EXIT_NORMAL :
-				deinit();
 				return 0;
 
 			default :
-				deinit();
 				return 1;
 		}
 	}

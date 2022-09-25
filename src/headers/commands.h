@@ -40,5 +40,6 @@ int jobs ( int, char* [] );
 int sig ( int, char* [] );
 int changeground ( int, char* [] );
 int makefg ( pid_t pid );
+char* tabComplete ( char* );
 
 #endif

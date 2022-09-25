@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <time.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include "./def.h"
 #include "./colors.h"
 
@@ -26,9 +27,12 @@ extern int history_count;
 extern char* history[];
 extern int BASE_STDIN_FD;
 extern int BASE_STDOUT_FD;
+extern char input_buffer[];
+extern size_t input_cursor;
 
 extern int commands ( int, char* [], int );
 extern int getnextbgid ();
+extern char* tabcomplete ( char* );
 
 int prompt ();
 void printprompt ();

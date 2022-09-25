@@ -6,12 +6,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <termio.h>
 #include "./utils.h"
 #include "./def.h"
 
 int init ();
-int deinit ();
+void deinit ();
 void handle_signal ( int );
 int getnextbgid ();
+void settermmode ( enum termmode );
 
 #endif

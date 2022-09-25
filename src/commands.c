@@ -182,6 +182,7 @@ int ls ( int argc, char* argv[] ) {
 			closedir(dir);
 		} else {
 			printfn(queries[i], &qst);
+			printf("\n");
 		}
 
 		free(query_path);
@@ -630,4 +631,58 @@ int changeground ( int argc, char* argv[] ) {
 	}
 
 	return 0;
+}
+
+char* tabcomplete ( char* query ) {
+
+	char* dirpath = cwd;
+
+	DIR* dir = opendir(dirpath);
+	if ( !dir ) {
+		perror("tabcomplete");
+		return NULL;
+	}
+
+	int num_entries = 0;
+	struct dirent* entries[MAX_NUM_CONTENTS];
+
+	struct dirent* entry;
+	while ( (entry = readdir(dir)) != NULL ) {
+		if ( !strncmp( entry->d_name, query, strlen(query) ) ) {
+			entries[num_entries++] = entry;
+			if ( num_entries == MAX_NUM_CONTENTS )
+				break;
+		}
+	}
+	qsort(entries, num_entries, sizeof(struct dirent*), filecmp);
+
+	if ( num_entries == 1 ) {
+		char* fullpath = malloc( (strlen(dirpath) + strlen("/") + strlen(entries[0]->d_name) + 1) * sizeof(char) );
+		sprintf(fullpath, "%s/%s", dirpath, entries[0]->d_name);
+		struct stat st;
+		if ( stat(fullpath, &st) == -1 ) {
+			perror(fullpath);
+			free(fullpath);
+			return NULL;
+		}
+		free(fullpath);
+
+		char* completed = malloc( (strlen(entries[0]->d_name) + strlen(" ") + 1) * sizeof(char) );
+		if ( S_ISDIR(st.st_mode) )
+			sprintf(completed, "%s/", entries[0]->d_name);
+		else
+			sprintf(completed, "%s ", entries[0]->d_name);
+
+		return completed;
+	}
+
+	// else if multiple entries are there
+	printf("\n");
+	for ( int i = 0; i < num_entries; i++ ) {
+		printf("%s\t", entries[i]->d_name);
+	}
+	printf("\n");
+	closedir(dir);
+
+	return NULL;
 }
