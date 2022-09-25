@@ -88,7 +88,7 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 			signal(SIGTSTP, SIG_DFL);
 			int err = execvp(argv[0], argv);
 			perror(argv[0]);
-			exit(err);
+			exit(-1);
 		} else {
 			perror("execvp");
 			pestatus = -1;

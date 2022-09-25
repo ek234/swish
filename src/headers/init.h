@@ -14,5 +14,6 @@ int init ();
 void deinit ();
 int getnextbgid ();
 void settermmode ( enum termmode );
+void chldhand ( int );
 
 #endif

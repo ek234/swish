@@ -31,6 +31,8 @@ int init () {
 	signal(SIGINT, SIG_IGN);
 	signal(SIGTSTP, SIG_IGN);
 
+	signal(SIGCHLD, chldhand);
+
 	user_details = getpwuid(getuid());
 	if ( !user_details ) {
 		perror("getpwent");
@@ -186,4 +188,24 @@ void settermmode ( enum termmode mode ) {
 			printf("how did we get here? %d\n", mode);
 			break;
 	}
+}
+
+void chldhand ( int sig ) {
+	int status;
+	pid_t pid = waitpid(-1, &status, WNOHANG | WUNTRACED);
+	if ( pid > 0 ) {
+		int jn = 0;
+		while ( jn < MAX_BG_TASKS && bg_tasks[jn] != pid )
+			jn++;
+		if ( WIFEXITED(status) ) {
+			fprintf(stderr, "\n[%d] %d exited with status %d\n", jn+1, bg_tasks[jn], WEXITSTATUS(status));
+			bg_tasks[jn] = 0;
+		} else if ( WIFSIGNALED(status) ) {
+			fprintf(stderr, "\n[%d] %d killed by signal %d\n", jn+1, bg_tasks[jn], WTERMSIG(status));
+			bg_tasks[jn] = 0;
+		} else if ( WIFSTOPPED(status) ) {
+			fprintf(stderr, "\n[%d] %d stopped by signal %d\n", jn+1, bg_tasks[jn], WSTOPSIG(status));
+		}
+	}
+	fflush(stderr);
 }

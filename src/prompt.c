@@ -240,26 +240,6 @@ int prompt () {
 			return CONTINUE_AFTER_SHELL_ERROR;
 		}
 	}
-
-	for ( int i = 0; i < MAX_BG_TASKS; i++ )
-		if ( !!bg_tasks[i] ) {
-			int status;
-			pid_t pid = waitpid(bg_tasks[i], &status, WNOHANG);
-			if ( pid < 0) {
-				printf("pid %d by task %d id %d ", pid, i+1, bg_tasks[i]);
-				perror("bg task");
-				return CONTINUE_AFTER_SHELL_ERROR;
-			} else if ( pid == bg_tasks[i] ) {
-				if ( WIFEXITED(status) ) {
-					fprintf(stderr, "[%d] %d exited with status %d\n", i+1, bg_tasks[i], WEXITSTATUS(status));
-					bg_tasks[i] = 0;
-				} else if ( WIFSIGNALED(status) ) {
-					fprintf(stderr, "[%d] %d killed by signal %d\n", i+1, bg_tasks[i], WTERMSIG(status));
-					bg_tasks[i] = 0;
-				}
-			}
-		}
-
 	fflush(stdout);
 
 	// if history count is between 0 and MAX_HISTORY, then the other elements are empty.
