@@ -28,24 +28,8 @@ struct termios orig_termios;
 
 int init () {
 
-	{
-		struct sigaction act;
-
-		memset(&act, 0, sizeof act);
-		sigemptyset(&act.sa_mask);
-		act.sa_handler = handle_signal;
-		act.sa_flags = 0;
-
-		if (sigaction(SIGTSTP, &act, NULL) == -1) {
-			perror("sigint sigaction");
-			return 1;
-		}
-
-		if (sigaction(SIGINT, &act, NULL) == -1) {
-			perror("sigint sigaction");
-			return 1;
-		}
-	}
+	signal(SIGINT, SIG_IGN);
+	signal(SIGTSTP, SIG_IGN);
 
 	user_details = getpwuid(getuid());
 	if ( !user_details ) {
@@ -179,35 +163,6 @@ void deinit () {
 	close(BASE_STDOUT_FD);
 
 	settermmode( TERMMODE_COOKED );
-
-	return;
-}
-
-void handle_signal ( int sig ) {
-	if ( cpid == 0 )
-		return;
-
-	int bg_id = -1;
-
-	switch ( sig ) {
-		case SIGINT :
-			break;
-		case SIGTSTP :
-			bg_id = getnextbgid();
-			if ( bg_id < 0 )
-				return;
-			bg_tasks[bg_id] = cpid;
-			break;
-		default :
-			write(STDERR_FILENO, "how did we get here?\n", 22);
-			break;
-	}
-
-//	if ( kill(cpid, sig) < 0 ) {
-//		perror("Shell signals");
-//		if ( bg_id >= 0 )
-//			bg_tasks[bg_id] = 0;
-//	}
 
 	return;
 }

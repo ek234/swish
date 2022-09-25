@@ -12,7 +12,6 @@
 
 int init ();
 void deinit ();
-void handle_signal ( int );
 int getnextbgid ();
 void settermmode ( enum termmode );
 

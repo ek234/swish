@@ -79,10 +79,13 @@ int commands ( int argc, char* argv[], int bg_task_id ) {
 				int bg_id = getnextbgid();
 				if ( bg_id < 0 )
 					return -1;
-				bg_tasks[bg_id] = child_pid;
+				bg_tasks[bg_id-1] = child_pid;
 			}
 			return CONTINUE_NORMAL;
 		} else if ( child_pid == 0 ) {
+			setpgid(0, 0);
+			signal(SIGINT, SIG_DFL);
+			signal(SIGTSTP, SIG_DFL);
 			int err = execvp(argv[0], argv);
 			perror(argv[0]);
 			exit(err);
@@ -553,9 +556,9 @@ int jobs ( int argc, char* argv[] ) {
 			char* name = line;
 
 			if ( !strncmp(status, "T", 1) )
-				FLAG_s && printf("[%d]: stopped `%s` (%d)\n", i, name, bg_tasks[i]);
+				FLAG_s && printf("[%d]: stopped `%s` (%d)\n", i+1, name, bg_tasks[i]);
 			else
-				FLAG_r && printf("[%d]: running `%s` (%d)\n", i, name, bg_tasks[i]);
+				FLAG_r && printf("[%d]: running `%s` (%d)\n", i+1, name, bg_tasks[i]);
 		}
 	}
 
@@ -570,9 +573,9 @@ int sig ( int argc, char* argv[] ) {
 		return -1;
 	}
 
-	int job_id = atoi(argv[1]);
+	int job_id = atoi(argv[1]) - 1;
 	if ( job_id < 0 || job_id >= MAX_BG_TASKS || !bg_tasks[job_id] ) {
-		fprintf(stderr, "%s: invalid job id %d\n", argv[0], job_id);
+		fprintf(stderr, "%s: invalid job id %d\n", argv[0], job_id+1);
 		return -1;
 	}
 
@@ -594,12 +597,20 @@ int sig ( int argc, char* argv[] ) {
 int makefg ( pid_t pid ) {
 	cpid = pid;
 	int status;
+
+	pid_t pgrp = tcgetpgrp(STDIN_FILENO);
+
+	tcsetpgrp(STDIN_FILENO, pid);
 	waitpid( pid, &status, WUNTRACED );
+	signal(SIGTTOU, SIG_IGN);
+	tcsetpgrp(STDIN_FILENO, pgrp);
+	signal(SIGTTOU, SIG_DFL);
+
 	if ( WIFSTOPPED(status) ) {
 		int bg_id = getnextbgid();
 		if ( bg_id < 0 )
 			return -1;
-		bg_tasks[bg_id] = pid;
+		bg_tasks[bg_id-1] = pid;
 	}
 	cpid = 0;
 	pestatus = WIFEXITED(status) ? WEXITSTATUS(status) : -100;
@@ -612,9 +623,9 @@ int changeground ( int argc, char* argv[] ) {
 		return -1;
 	}
 
-	int job_id = atoi(argv[1]);
+	int job_id = atoi(argv[1]) - 1;
 	if ( job_id < 0 || job_id >= MAX_BG_TASKS || !bg_tasks[job_id] ) {
-		fprintf(stderr, "%s: invalid job id %d\n", argv[0], job_id);
+		fprintf(stderr, "%s: invalid job id %d\n", argv[0], job_id+1);
 		return -1;
 	}
 
